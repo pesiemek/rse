@@ -1,0 +1,3 @@
+[console_scripts]
+ser = bin.cli:main
+
