@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-# rse
-Michealmas, Research Software Engineering
-=======
 # SER
 Software Engineering for Research
 
@@ -22,4 +18,3 @@ conda activate ser
 ser --help
 ``` 
 
->>>>>>> 16e15ed (first commit)
