@@ -12,31 +12,33 @@ from torchvision import  transforms
 
 import typer
 
+import time
+
 main = typer.Typer()
 
 PROJECT_ROOT = Path(__file__).parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
-MODEL_NAME = "Model_best_run"
 
 
 @main.command()
 def training(
-    device: torch.device("cuda" if torch.cuda.is_available() else "cpu"),
     name: str = typer.Option(
-        ..., "-n", "--name", help="Name of experiment to save under."
+        "run", "-n", "--name", help="Name of experiment to save under."
 
     ),
-    epochs: int = typer.Argument(..., "--epochs", help="Number of epochs to run"),
-    batch_size: int = typer.Argument(..., "--batch", help="Size of batch for the data loader"),
-    learning_rate: int = typer.Argument(..., "--rate", help="Learning reate for the optimiser")
+    epochs: int = typer.Option(2, "--epochs", help="Number of epochs to run"),
+    batch_size: int = typer.Option(1000, "--batch", help="Size of batch for the data loader"),
+    learning_rate: float = typer.Option(0.001, "--rate", help="Learning reate for the optimiser")
 ):
 
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Running experiment {name}")
 
-    # save the parameters!
-    params = {"name": name, "epochs": epochs, "batch_size": batch_size, "learning_rate": learning_rate, "optimizer": "Adam"}
-    with open('params.json', 'w') as f:
-        json.dump(params, f)
+    timestamp = time.now()
+
+    DIRECTORY = PROJECT_ROOT / + name
+    MODEL_NAME = timestamp
+    PARAMETERS = timestamp + "_parameters.json"
 
     # load model
     model = Net().to(device)
@@ -67,11 +69,17 @@ def training(
         if val_loss < best_valid_loss:
             best_valid_loss = val_loss
             print('saving my model, improvement in validation loss achieved')
-            torch.save(model.state_dict(), MODEL_NAME)
+            torch.save(model.state_dict(), DIRECTORY + "_" + MODEL_NAME)
 
         print(f"Val Epoch: {epoch} | Avg Loss: {val_loss:.4f} | Accuracy: {val_acc}")
 
+    
+    params = {"validation_loss": best_valid_loss, "epochs": epochs,
+     "batch_size": batch_size, "learning_rate": learning_rate,
+      "optimizer": "Adam", "run_name": name}
 
+    with open(PARAMETERS, 'w') as f:
+        json.dump(params, f)
 
 @main.command()
 def infer():
