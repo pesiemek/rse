@@ -11,8 +11,7 @@ import torch.nn.functional as F
 from torchvision import  transforms
 
 import typer
-
-import time
+from datetime import datetime
 
 main = typer.Typer()
 
@@ -34,11 +33,13 @@ def training(
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Running experiment {name}")
 
-    timestamp = time.now()
+    timestamp = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
 
-    DIRECTORY = PROJECT_ROOT / + name
-    MODEL_NAME = timestamp
-    PARAMETERS = timestamp + "_parameters.json"
+    DIRECTORY = PROJECT_ROOT / "{name}".format(name=name)
+    MODEL_NAME = DIRECTORY / timestamp
+    PARAMETERS = DIRECTORY / "{timestamp}_parameters.json".format(timestamp=timestamp)
+    DIRECTORY.mkdir(parents=True, exist_ok=True)
+
 
     # load model
     model = Net().to(device)
@@ -69,7 +70,7 @@ def training(
         if val_loss < best_valid_loss:
             best_valid_loss = val_loss
             print('saving my model, improvement in validation loss achieved')
-            torch.save(model.state_dict(), DIRECTORY + "_" + MODEL_NAME)
+            torch.save(model.state_dict(), MODEL_NAME)
 
         print(f"Val Epoch: {epoch} | Avg Loss: {val_loss:.4f} | Accuracy: {val_acc}")
 
