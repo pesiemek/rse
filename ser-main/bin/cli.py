@@ -1,4 +1,5 @@
 from pathlib import Path
+from ser.data import dataloader
 import torch
 from torch import optim
 import torch.nn as nn
@@ -16,15 +17,22 @@ DATA_DIR = PROJECT_ROOT / "data"
 
 @main.command()
 def train(
+    device: torch.device("cuda" if torch.cuda.is_available() else "cpu"),
     name: str = typer.Option(
         ..., "-n", "--name", help="Name of experiment to save under."
+
     ),
+    epochs: int = typer.Argument(..., "--epochs", help="Number of epochs to run"),
+    batch_size: int = typer.Argument(..., "--batch", help="Size of batch for the data loader"),
+    learning_rate: int = typer.Argument(..., "--rate", help="Learning reate for the optimiser"),
+
+    
 ):
     print(f"Running experiment {name}")
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    epochs = 2
-    batch_size = 1000
-    learning_rate = 0.01
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # epochs = 2
+    # batch_size = 1000
+    # learning_rate = 0.01
 
     # save the parameters!
 
@@ -39,24 +47,11 @@ def train(
         [transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))]
     )
 
-    # dataloaders
-    training_dataloader = DataLoader(
-        datasets.MNIST(root="../data", download=True, train=True, transform=ts),
-        batch_size=batch_size,
-        shuffle=True,
-        num_workers=1,
-    )
-
-    validation_dataloader = DataLoader(
-        datasets.MNIST(root=DATA_DIR, download=True, train=False, transform=ts),
-        batch_size=batch_size,
-        shuffle=False,
-        num_workers=1,
-    )
+    test_data = dataloader(batch_size, workers=2, type="train", directory=DATA_DIR, transform=ts)
 
     # train
     for epoch in range(epochs):
-        for i, (images, labels) in enumerate(training_dataloader):
+        for i, (images, labels) in enumerate(test_data):
             images, labels = images.to(device), labels.to(device)
             model.train()
             optimizer.zero_grad()
@@ -71,19 +66,19 @@ def train(
             # validate
             val_loss = 0
             correct = 0
-            with torch.no_grad():
-                for images, labels in validation_dataloader:
-                    images, labels = images.to(device), labels.to(device)
-                    model.eval()
-                    output = model(images)
-                    val_loss += F.nll_loss(output, labels, reduction="sum").item()
-                    pred = output.argmax(dim=1, keepdim=True)
-                    correct += pred.eq(labels.view_as(pred)).sum().item()
-                val_loss /= len(validation_dataloader.dataset)
-                val_acc = correct / len(validation_dataloader.dataset)
+        with torch.no_grad():
+            for images, labels in validation_dataloader:
+                  images, labels = images.to(device), labels.to(device)
+                  model.eval()
+                  output = model(images)
+                  val_loss += F.nll_loss(output, labels, reduction="sum").item()
+                  pred = output.argmax(dim=1, keepdim=True)
+                  correct += pred.eq(labels.view_as(pred)).sum().item()
+            val_loss /= len(validation_dataloader.dataset)
+            val_acc = correct / len(validation_dataloader.dataset)
 
-                print(
-                    f"Val Epoch: {epoch} | Avg Loss: {val_loss:.4f} | Accuracy: {val_acc}"
+            print(
+                 f"Val Epoch: {epoch} | Avg Loss: {val_loss:.4f} | Accuracy: {val_acc}"
                 )
 
 
