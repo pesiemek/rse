@@ -10,4 +10,4 @@ def train():
 
 @main.command()
 def infer():
-    pass
+    print("this is where the inference code will go")
