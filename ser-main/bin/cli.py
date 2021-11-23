@@ -4,6 +4,7 @@ from ser.model import Net
 from ser.train import train
 from ser.validate import validate
 import torch
+import json
 
 from torch import optim
 import torch.nn.functional as F
@@ -15,6 +16,7 @@ main = typer.Typer()
 
 PROJECT_ROOT = Path(__file__).parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
+MODEL_NAME = "Model_best_run"
 
 
 @main.command()
@@ -32,6 +34,9 @@ def training(
     print(f"Running experiment {name}")
 
     # save the parameters!
+    params = {"name": name, "epochs": epochs, "batch_size": batch_size, "learning_rate": learning_rate, "optimizer": "Adam"}
+    with open('params.json', 'w') as f:
+        json.dump(params, f)
 
     # load model
     model = Net().to(device)
@@ -46,6 +51,8 @@ def training(
 
     test_data = dataloader(batch_size, workers=2, type="train", directory=DATA_DIR, transform=ts)
     val_data = dataloader(batch_size, workers=1, type="validation", directory=DATA_DIR, transform=ts)
+    
+    best_valid_loss = float('inf')
 
     # train
     for epoch in range(epochs):
@@ -55,7 +62,12 @@ def training(
                 f"| Loss: {loss.item():.4f}")
 
         # validate
-        val_loss, val_acc = validate(model, val_data, device) 
+        val_loss, val_acc = validate(model, val_data, device) \
+        
+        if val_loss < best_valid_loss:
+            best_valid_loss = val_loss
+            print('saving my model, improvement in validation loss achieved')
+            torch.save(model.state_dict(), MODEL_NAME)
 
         print(f"Val Epoch: {epoch} | Avg Loss: {val_loss:.4f} | Accuracy: {val_acc}")
 
