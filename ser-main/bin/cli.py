@@ -1,8 +1,9 @@
 from pathlib import Path
+from ser.art import generate_ascii_art
 from ser.constants import DATA_DIR, PROJECT_ROOT, TIMESTAMP_FORMAT
 from ser.data import load_data
 from ser.model import Net
-from ser.params import Params, load_params, save_params
+from ser.params import Params, load_params, print_params, save_params
 from ser.train import train_batch
 from ser.transforms import normalize, transform
 from ser.validate import validate_batch
@@ -84,8 +85,10 @@ def infer(
     model_path = run_path / "model_{timestamp}.pt".format(timestamp=timestamp)
     label = 7
 
-    # TODO load the parameters from the run_path so we can print them out!
+    # load the parameters from the run_path so we can print them out!
     params = load_params(params_path)
+    print("Inference on model {experiment} run at {timestamp}".format(experiment=experiment, timestamp=timestamp))
+    print_params(params)
 
     # select image to run inference for
     dataloader = load_data(params.batch_size, type="train", transform=transform(normalize))
@@ -105,24 +108,3 @@ def infer(
     pixels = images[0][0]
     print(generate_ascii_art(pixels))
     print(f"This is a {pred}")
-
-
-def generate_ascii_art(pixels):
-    ascii_art = []
-    for row in pixels:
-        line = []
-        for pixel in row:
-            line.append(pixel_to_char(pixel))
-        ascii_art.append("".join(line))
-    return "\n".join(ascii_art)
-
-
-def pixel_to_char(pixel):
-    if pixel > 0.99:
-        return "O"
-    elif pixel > 0.9:
-        return "o"
-    elif pixel > 0:
-        return "."
-    else:
-        return " "

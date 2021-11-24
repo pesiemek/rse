@@ -15,9 +15,17 @@ def save_params(run_path, params):
     with open(run_path, "w") as f:
         json.dump(asdict(params), f, indent=2)
 
+
 def load_params(path):
     file = open(path)
     return _undict(json.load(file))
+
+
+def print_params(params: Params):
+    print("Model details: ")
+    for attribute in dir(params):
+        if not attribute.startswith('__'):
+            print("{attribute}: {value}".format(attribute=attribute, value=getattr(params, attribute)))
 
 
 def _undict(params_dict: Dict): 
@@ -27,3 +35,4 @@ def _undict(params_dict: Dict):
         learning_rate=params_dict["learning_rate"])
         
     return params
+
