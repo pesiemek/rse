@@ -87,7 +87,7 @@ def infer(
 
     # load the parameters from the run_path so we can print them out!
     params = load_params(params_path)
-    print("Inference on model {experiment} run at {timestamp}".format(experiment=experiment, timestamp=timestamp))
+    print("\nInference on \n model: {experiment} \n ran at: {timestamp} \n".format(experiment=experiment, timestamp=timestamp))
     print_params(params)
 
     # select image to run inference for
@@ -103,8 +103,9 @@ def infer(
     model.eval()
     output = model(images)
     pred = output.argmax(dim=1, keepdim=True)[0].item()
-    # certainty = max(list(torch.exp(output)[0]))
+    certainty = torch.round(max(list(torch.exp(output)[0]))*100)
    
     pixels = images[0][0]
     print(generate_ascii_art(pixels))
-    print(f"This is a {pred}")
+    print("I am {certainty}% sure that this is a {pred}".format(certainty=certainty, pred=pred))
+

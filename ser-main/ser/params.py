@@ -25,7 +25,7 @@ def print_params(params: Params):
     print("Model details: ")
     for attribute in dir(params):
         if not attribute.startswith('__'):
-            print("{attribute}: {value}".format(attribute=attribute, value=getattr(params, attribute)))
+            print(" {attribute}: {value}".format(attribute=attribute, value=getattr(params, attribute)))
 
 
 def _undict(params_dict: Dict): 
