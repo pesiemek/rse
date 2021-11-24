@@ -16,4 +16,4 @@ def validate_batch(model, data, device):
       val_loss /= len(data.dataset)
       val_acc = correct / len(data.dataset)
         
-    return [val_loss, val_acc]
+    return val_loss, val_acc

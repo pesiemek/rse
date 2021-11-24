@@ -10,4 +10,4 @@ def train_batch(model, optimizer, data, device):
         loss.backward()
         optimizer.step()
     
-    return [model, loss]
+    return model, loss
