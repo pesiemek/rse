@@ -3,7 +3,7 @@ from ser.art import generate_ascii_art
 from ser.constants import DATA_DIR, PROJECT_ROOT, TIMESTAMP_FORMAT
 from ser.data import load_data
 from ser.model import Net
-from ser.params import Params, load_params, print_params, save_params
+from ser.params import Params, load_params
 from ser.train import train_batch
 from ser.transforms import normalize, transform
 from ser.validate import validate_batch
@@ -40,10 +40,10 @@ def train(
     optimizer = optim.Adam(model.parameters(), lr=params.learning_rate)
 
     timestamp = datetime.now().strftime(TIMESTAMP_FORMAT)
-    DIRECTORY = PROJECT_ROOT / "Results" / "{name}".format(name=name)
-    MODEL_NAME = DIRECTORY / "model_{timestamp}.pt".format(timestamp=timestamp)
-    PARAMETERS = DIRECTORY / "params_{timestamp}.json".format(timestamp=timestamp)
-    DIRECTORY.mkdir(parents=True, exist_ok=True)
+    results_path = PROJECT_ROOT / "Results" / "{name}".format(name=name)
+    model_path = results_path / "model_{timestamp}.pt".format(timestamp=timestamp)
+    params_path = results_path / "params_{timestamp}.json".format(timestamp=timestamp)
+    results_path.mkdir(parents=True, exist_ok=True)
 
     test_data = load_data(params.batch_size, type="train", transform=transform(normalize))
     val_data = load_data(params.batch_size, type="validation", transform=transform(normalize))
@@ -62,13 +62,13 @@ def train(
         
         if val_loss < best_valid_loss:
             best_valid_loss = val_loss
-            print('saving my model, improvement in validation loss achieved')
-            torch.save(model, MODEL_NAME)
+            print('Saving the model, improvement in validation loss achieved')
+            torch.save(model, model_path)
 
         print(f"Val Epoch: {epoch} | Avg Loss: {val_loss:.4f} | Accuracy: {val_acc}")
 
+    params.save(params_path)
 
-    save_params(PARAMETERS, params)
 
 
 @main.command()
@@ -77,7 +77,7 @@ def infer(
         ..., "-t", "--timestamp", help="Name of experiment to infer."),
 
     experiment: str = typer.Option(
-        "test", "-e", "--experiment", help="Name of your experiment folder")
+        "bimbo", "-e", "--experiment", help="Name of your experiment folder")
     ):
 
     run_path = Path(PROJECT_ROOT / "Results" / "{experiment}".format(experiment=experiment))
@@ -87,8 +87,8 @@ def infer(
 
     # load the parameters from the run_path so we can print them out!
     params = load_params(params_path)
-    print("\nInference on \n model: {experiment} \n ran at: {timestamp} \n".format(experiment=experiment, timestamp=timestamp))
-    print_params(params)
+    print(f"\nInference on \n model: {experiment} \n ran at: {timestamp} \n")
+    params.print()
 
     # select image to run inference for
     dataloader = load_data(params.batch_size, type="train", transform=transform(normalize))
@@ -107,5 +107,5 @@ def infer(
    
     pixels = images[0][0]
     print(generate_ascii_art(pixels))
-    print("I am {certainty}% sure that this is a {pred}".format(certainty=certainty, pred=pred))
+    print(f"I am {certainty}% sure that this is a {pred}")
 
