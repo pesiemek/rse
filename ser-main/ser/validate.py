@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 
 
-def validate(model, data, device):
+def validate_batch(model, data, device):
     val_loss = 0
     correct = 0
     with torch.no_grad():

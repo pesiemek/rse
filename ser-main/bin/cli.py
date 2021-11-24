@@ -1,26 +1,23 @@
 from pathlib import Path
-from ser.data import dataloader
+from ser.constants import DATA_DIR, PROJECT_ROOT, TIMESTAMP_FORMAT
+from ser.data import load_data
 from ser.model import Net
-from ser.train import train
-from ser.validate import validate
+from ser.params import Params, load_params, save_params
+from ser.train import train_batch
+from ser.transforms import normalize, transform
+from ser.validate import validate_batch
 import torch
-import json
 
 from torch import optim
-import torch.nn.functional as F
-from torchvision import  transforms
 
 import typer
+main = typer.Typer()
 from datetime import datetime
 
-main = typer.Typer()
-
-PROJECT_ROOT = Path(__file__).parent.parent
-DATA_DIR = PROJECT_ROOT / "data"
 
 
 @main.command()
-def training(
+def train(
     name: str = typer.Option(
         "run", "-n", "--name", help="Name of experiment to save under."
 
@@ -33,55 +30,99 @@ def training(
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Running experiment {name}")
 
-    timestamp = datetime.now().strftime("%d-%m-%Y_%H:%M:%S")
-
-    DIRECTORY = PROJECT_ROOT / "{name}".format(name=name)
-    MODEL_NAME = DIRECTORY / timestamp
-    PARAMETERS = DIRECTORY / "{timestamp}_parameters.json".format(timestamp=timestamp)
-    DIRECTORY.mkdir(parents=True, exist_ok=True)
-
+    params = Params(name, epochs, batch_size, learning_rate)
 
     # load model
     model = Net().to(device)
 
     # setup params
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+    optimizer = optim.Adam(model.parameters(), lr=params.learning_rate)
 
-    # torch transforms
-    ts = transforms.Compose(
-        [transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))]
-    )
+    timestamp = datetime.now().strftime(TIMESTAMP_FORMAT)
+    DIRECTORY = PROJECT_ROOT / "Results" / "{name}".format(name=name)
+    MODEL_NAME = DIRECTORY / "model_{timestamp}.pt".format(timestamp=timestamp)
+    PARAMETERS = DIRECTORY / "params_{timestamp}.json".format(timestamp=timestamp)
+    DIRECTORY.mkdir(parents=True, exist_ok=True)
 
-    test_data = dataloader(batch_size, workers=2, type="train", directory=DATA_DIR, transform=ts)
-    val_data = dataloader(batch_size, workers=1, type="validation", directory=DATA_DIR, transform=ts)
+    test_data = load_data(params.batch_size, type="train", transform=transform(normalize))
+    val_data = load_data(params.batch_size, type="validation", transform=transform(normalize))
     
     best_valid_loss = float('inf')
 
     # train
     for epoch in range(epochs):
-        model, loss = train(model, optimizer, test_data, device)
+        model, loss = train_batch(model, optimizer, test_data, device)
 
         print(f"Train Epoch: {epoch} "
                 f"| Loss: {loss.item():.4f}")
 
         # validate
-        val_loss, val_acc = validate(model, val_data, device) \
+        val_loss, val_acc = validate_batch(model, val_data, device) \
         
         if val_loss < best_valid_loss:
             best_valid_loss = val_loss
             print('saving my model, improvement in validation loss achieved')
-            torch.save(model.state_dict(), MODEL_NAME)
+            torch.save(model, MODEL_NAME)
 
         print(f"Val Epoch: {epoch} | Avg Loss: {val_loss:.4f} | Accuracy: {val_acc}")
 
-    
-    params = {"validation_loss": best_valid_loss, "epochs": epochs,
-     "batch_size": batch_size, "learning_rate": learning_rate,
-      "optimizer": "Adam", "run_name": name}
 
-    with open(PARAMETERS, 'w') as f:
-        json.dump(params, f)
+    save_params(PARAMETERS, params)
+
 
 @main.command()
-def infer():
-    print("This is where the inference code will go")
+def infer(
+    timestamp: str = typer.Option(
+        ..., "-t", "--timestamp", help="Name of experiment to infer."),
+
+    experiment: str = typer.Option(
+        "test", "-e", "--experiment", help="Name of your experiment folder")
+    ):
+
+    run_path = Path(PROJECT_ROOT / "Results" / "{experiment}".format(experiment=experiment))
+    params_path = run_path / "params_{timestamp}.json".format(timestamp=timestamp)
+    model_path = run_path / "model_{timestamp}.pt".format(timestamp=timestamp)
+    label = 7
+
+    # TODO load the parameters from the run_path so we can print them out!
+    params = load_params(params_path)
+
+    # select image to run inference for
+    dataloader = load_data(params.batch_size, type="train", transform=transform(normalize))
+    images, labels = next(iter(dataloader))
+    while labels[0].item() != label:
+        images, labels = next(iter(dataloader))
+
+    # load the model
+    model = torch.load(model_path)
+
+    # run inference
+    model.eval()
+    output = model(images)
+    pred = output.argmax(dim=1, keepdim=True)[0].item()
+    # certainty = max(list(torch.exp(output)[0]))
+   
+    pixels = images[0][0]
+    print(generate_ascii_art(pixels))
+    print(f"This is a {pred}")
+
+
+def generate_ascii_art(pixels):
+    ascii_art = []
+    for row in pixels:
+        line = []
+        for pixel in row:
+            line.append(pixel_to_char(pixel))
+        ascii_art.append("".join(line))
+    return "\n".join(ascii_art)
+
+
+def pixel_to_char(pixel):
+    if pixel > 0.99:
+        return "O"
+    elif pixel > 0.9:
+        return "o"
+    elif pixel > 0:
+        return "."
+    else:
+        return " "

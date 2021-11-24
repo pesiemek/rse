@@ -1,6 +1,6 @@
 import torch.nn.functional as F
           
-def train(model, optimizer, data, device): 
+def train_batch(model, optimizer, data, device): 
     for i, (images, labels) in enumerate(data):
         images, labels = images.to(device), labels.to(device)        
         model.train()

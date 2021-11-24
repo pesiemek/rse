@@ -134,5 +134,6 @@ dmypy.json
 .pyre/
 
 # Folders
-Lectures/
-Practicals/
+./Lectures/
+./Practicals/
+Results/
