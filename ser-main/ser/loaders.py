@@ -21,6 +21,14 @@ def load_validation(batch_size: int, transform):
         num_workers=1,
     )
 
+def load_test(batch_size, transforms):
+    data = datasets.MNIST(
+        root=DATA_DIR, download=True, train=False, transform=transforms
+    )
+    return DataLoader(data, batch_size=batch_size, shuffle=True, num_workers=1)
+
+
+
 def load_params(path):
     file = open(path)
     return _undict(json.load(file))

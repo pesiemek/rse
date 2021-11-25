@@ -1,15 +1,14 @@
-from ser.loaders import load_training, load_validation, load_params
+import torch
+import typer
+from ser.helpers import set_paths
+from ser.infer import run_inference
+from ser.loaders import load_params, load_training, load_validation
 from ser.model import Net
 from ser.params import Params
 from ser.train import run_training
 from ser.transforms import normalize, transform
-from ser.helpers import set_paths
-from ser.infer import run_inference
-import torch
-
 from torch import optim
 
-import typer
 main = typer.Typer()
 
 
