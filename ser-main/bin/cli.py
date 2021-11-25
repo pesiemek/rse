@@ -1,7 +1,7 @@
 from pathlib import Path
 from ser.art import generate_ascii_art
-from ser.constants import DATA_DIR, PROJECT_ROOT, TIMESTAMP_FORMAT
-from ser.data import load_data
+from ser.constants import PROJECT_ROOT, TIMESTAMP_FORMAT
+from ser.loaders import load_training, load_validation, load_params
 from ser.model import Net
 from ser.params import Params, load_params
 from ser.train import train_batch
@@ -45,8 +45,8 @@ def train(
     params_path = results_path / "params_{timestamp}.json".format(timestamp=timestamp)
     results_path.mkdir(parents=True, exist_ok=True)
 
-    test_data = load_data(params.batch_size, type="train", transform=transform(normalize))
-    val_data = load_data(params.batch_size, type="validation", transform=transform(normalize))
+    test_data = load_training(params.batch_size, type="train", transform=transform(normalize))
+    val_data = load_validation(params.batch_size, type="validation", transform=transform(normalize))
     
     best_valid_loss = float('inf')
 
@@ -85,7 +85,6 @@ def infer(
     run_path = Path(PROJECT_ROOT / "Results" / "{experiment}".format(experiment=experiment))
     params_path = run_path / "params_{timestamp}.json".format(timestamp=timestamp)
     model_path = run_path / "model_{timestamp}.pt".format(timestamp=timestamp)
-    label = 2
 
     # load the parameters from the run_path so we can print them out!
     params = load_params(params_path)
