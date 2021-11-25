@@ -23,7 +23,7 @@ def train(
         "run", "-n", "--name", help="Name of experiment to save under."
 
     ),
-    epochs: int = typer.Option(2, "--epochs", help="Number of epochs to run"),
+    epochs: int = typer.Option(1, "--epochs", help="Number of epochs to run"),
     batch_size: int = typer.Option(1000, "--batch", help="Size of batch for the data loader"),
     learning_rate: float = typer.Option(0.001, "--rate", help="Learning reate for the optimiser")
 ):
@@ -77,18 +77,21 @@ def infer(
         ..., "-t", "--timestamp", help="Name of experiment to infer."),
 
     experiment: str = typer.Option(
-        "bimbo", "-e", "--experiment", help="Name of your experiment folder")
+        "morning_test", "-e", "--experiment", help="Name of your experiment folder"),
+    
+    label: int = typer.Option(2, "-l", "--label", help="Which number you'd like to see prediction of")
     ):
 
     run_path = Path(PROJECT_ROOT / "Results" / "{experiment}".format(experiment=experiment))
     params_path = run_path / "params_{timestamp}.json".format(timestamp=timestamp)
     model_path = run_path / "model_{timestamp}.pt".format(timestamp=timestamp)
-    label = 7
+    label = 2
 
     # load the parameters from the run_path so we can print them out!
     params = load_params(params_path)
     print(f"\nInference on \n model: {experiment} \n ran at: {timestamp} \n")
     params.print()
+    print("")
 
     # select image to run inference for
     dataloader = load_data(params.batch_size, type="train", transform=transform(normalize))

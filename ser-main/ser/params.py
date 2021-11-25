@@ -17,9 +17,8 @@ class Params:
 
     def print(self):
         print("Model details: ")
-        for attribute in dir(self):
-            if not attribute.startswith('__'):
-                print(f" {attribute}: {getattr(self, attribute)}")
+        for attribute in self.__dict__.keys():
+                print(f" {attribute}: {self.__dict__[attribute]}")
 
 
 
