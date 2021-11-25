@@ -1,7 +1,17 @@
 from ser.art import generate_ascii_art
 import torch
+from ser.transforms import transforms, normalize, flip
+
 
 def run_inference(model, data, label):
+    def _select_test_image(label):
+     dataloader = test_dataloader(1, transforms(normalize))
+     # TODO we should be able to switch between these abstractions without
+     #   having to change any code.
+     #   make it happen!
+     ts = [normalize, flip]
+     dataloader = test_dataloader(1, transforms(*ts))
+    
     images, labels = next(iter(data))
     while labels[0].item() != label:
         images, labels = next(iter(data))
