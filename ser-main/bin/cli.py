@@ -1,7 +1,7 @@
 from ser.art import generate_ascii_art
 from ser.loaders import load_training, load_validation, load_params
 from ser.model import Net
-from ser.params import Params, load_params
+from ser.params import Params
 from ser.train import run_training
 from ser.transforms import normalize, transform
 from ser.helpers import set_paths
@@ -11,8 +11,6 @@ from torch import optim
 
 import typer
 main = typer.Typer()
-from datetime import datetime
-
 
 
 @main.command()
@@ -55,7 +53,7 @@ def infer(
         ..., "-t", "--timestamp", help="Name of experiment to infer."),
 
     experiment: str = typer.Option(
-        "morning_test", "-e", "--experiment", help="Name of your experiment folder"),
+        "folder", "-e", "--experiment", help="Name of your experiment folder"),
     
     label: int = typer.Option(2, "-l", "--label", help="Which number you'd like to see prediction of")
     ):
