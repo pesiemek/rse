@@ -1,11 +1,11 @@
 from pathlib import Path
 from ser.art import generate_ascii_art
-from ser.constants import PROJECT_ROOT, TIMESTAMP_FORMAT
 from ser.loaders import load_training, load_validation, load_params
 from ser.model import Net
 from ser.params import Params, load_params
 from ser.train import train_batch
 from ser.transforms import normalize, transform
+from ser.helpers import set_paths
 from ser.validate import validate_batch
 import torch
 
@@ -39,14 +39,10 @@ def train(
     # setup params
     optimizer = optim.Adam(model.parameters(), lr=params.learning_rate)
 
-    timestamp = datetime.now().strftime(TIMESTAMP_FORMAT)
-    results_path = PROJECT_ROOT / "Results" / "{name}".format(name=name)
-    model_path = results_path / "model_{timestamp}.pt".format(timestamp=timestamp)
-    params_path = results_path / "params_{timestamp}.json".format(timestamp=timestamp)
-    results_path.mkdir(parents=True, exist_ok=True)
+    model_path, params_path = set_paths(name)
 
-    test_data = load_training(params.batch_size, type="train", transform=transform(normalize))
-    val_data = load_validation(params.batch_size, type="validation", transform=transform(normalize))
+    test_data = load_training(params.batch_size, transform=transform(normalize))
+    val_data = load_validation(params.batch_size, transform=transform(normalize))
     
     best_valid_loss = float('inf')
 
@@ -82,9 +78,7 @@ def infer(
     label: int = typer.Option(2, "-l", "--label", help="Which number you'd like to see prediction of")
     ):
 
-    run_path = Path(PROJECT_ROOT / "Results" / "{experiment}".format(experiment=experiment))
-    params_path = run_path / "params_{timestamp}.json".format(timestamp=timestamp)
-    model_path = run_path / "model_{timestamp}.pt".format(timestamp=timestamp)
+    model_path, params_path = set_paths(experiment, timestamp)
 
     # load the parameters from the run_path so we can print them out!
     params = load_params(params_path)
@@ -93,7 +87,7 @@ def infer(
     print("")
 
     # select image to run inference for
-    dataloader = load_data(params.batch_size, type="train", transform=transform(normalize))
+    dataloader = load_training(params.batch_size, transform=transform(normalize))
     images, labels = next(iter(dataloader))
     while labels[0].item() != label:
         images, labels = next(iter(dataloader))
