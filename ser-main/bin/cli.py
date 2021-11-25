@@ -1,10 +1,10 @@
-from ser.art import generate_ascii_art
 from ser.loaders import load_training, load_validation, load_params
 from ser.model import Net
 from ser.params import Params
 from ser.train import run_training
 from ser.transforms import normalize, transform
 from ser.helpers import set_paths
+from ser.infer import run_inference
 import torch
 
 from torch import optim
@@ -53,7 +53,7 @@ def infer(
         ..., "-t", "--timestamp", help="Name of experiment to infer."),
 
     experiment: str = typer.Option(
-        "folder", "-e", "--experiment", help="Name of your experiment folder"),
+        "bam", "-e", "--experiment", help="Name of your experiment folder"),
     
     label: int = typer.Option(2, "-l", "--label", help="Which number you'd like to see prediction of")
     ):
@@ -67,21 +67,9 @@ def infer(
     print("")
 
     # select image to run inference for
-    dataloader = load_training(params.batch_size, transform=transform(normalize))
-    images, labels = next(iter(dataloader))
-    while labels[0].item() != label:
-        images, labels = next(iter(dataloader))
-
-    # load the model
+    data = load_training(params.batch_size, transform=transform(normalize))
     model = torch.load(model_path)
 
-    # run inference
-    model.eval()
-    output = model(images)
-    pred = output.argmax(dim=1, keepdim=True)[0].item()
-    certainty = torch.round(max(list(torch.exp(output)[0]))*100)
-   
-    pixels = images[0][0]
-    print(generate_ascii_art(pixels))
-    print(f"I am {certainty}% sure that this is a {pred}")
+    run_inference(model, data, label)
+
 
