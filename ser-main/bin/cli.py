@@ -1,12 +1,10 @@
-from pathlib import Path
 from ser.art import generate_ascii_art
 from ser.loaders import load_training, load_validation, load_params
 from ser.model import Net
 from ser.params import Params, load_params
-from ser.train import train_batch
+from ser.train import run_training
 from ser.transforms import normalize, transform
 from ser.helpers import set_paths
-from ser.validate import validate_batch
 import torch
 
 from torch import optim
@@ -28,41 +26,25 @@ def train(
     learning_rate: float = typer.Option(0.001, "--rate", help="Learning reate for the optimiser")
 ):
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Running experiment {name}")
-
-    params = Params(name, epochs, batch_size, learning_rate)
+    
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # load model
     model = Net().to(device)
 
-    # setup params
+    # setup params and loaders
+    params = Params(name, epochs, batch_size, learning_rate)
     optimizer = optim.Adam(model.parameters(), lr=params.learning_rate)
-
-    model_path, params_path = set_paths(name)
-
+    
     test_data = load_training(params.batch_size, transform=transform(normalize))
     val_data = load_validation(params.batch_size, transform=transform(normalize))
     
-    best_valid_loss = float('inf')
-
     # train
-    for epoch in range(epochs):
-        model, loss = train_batch(model, optimizer, test_data, device)
+    best_model = run_training(model, epochs, optimizer, test_data, val_data, device)
 
-        print(f"Train Epoch: {epoch} "
-                f"| Loss: {loss.item():.4f}")
-
-        # validate
-        val_loss, val_acc = validate_batch(model, val_data, device) \
-        
-        if val_loss < best_valid_loss:
-            best_valid_loss = val_loss
-            print('Saving the model, improvement in validation loss achieved')
-            torch.save(model, model_path)
-
-        print(f"Val Epoch: {epoch} | Avg Loss: {val_loss:.4f} | Accuracy: {val_acc}")
-
+    model_path, params_path = set_paths(name)
+    torch.save(best_model, model_path)
     params.save(params_path)
 
 
