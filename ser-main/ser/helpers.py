@@ -1,5 +1,7 @@
 from datetime import datetime
 from ser.constants import PROJECT_ROOT, TIMESTAMP_FORMAT
+from ser.loaders import load_test
+from ser.transforms import transform
 
 
 def set_paths(name: str, timestamp=None):
@@ -12,3 +14,14 @@ def set_paths(name: str, timestamp=None):
     results_path.mkdir(parents=True, exist_ok=True)
 
     return model_path, params_path
+
+
+
+def select_test_image(label, transforms):
+    test_data = load_test(1, transforms)
+    
+    image, label = next(iter(test_data))
+    while label[0].item() != label:
+        image, label = next(iter(test_data))
+    
+    return image

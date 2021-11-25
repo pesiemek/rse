@@ -1,21 +1,22 @@
 from ser.constants import DATA_DIR
+from ser.transforms import transform
 from torch.utils.data import DataLoader
 from torchvision import datasets
 from typing import Dict
 from ser.params import Params   
 import json
 
-def load_training(batch_size: int, transform):
+def load_training(batch_size: int, transforms):
     return DataLoader(
-        datasets.MNIST(root=DATA_DIR, download=True, train=True, transform=transform),
+        datasets.MNIST(root=DATA_DIR, download=True, train=True, transform=transform(*transforms)),
         batch_size=batch_size,
         shuffle=True,
         num_workers=1,
     )
 
-def load_validation(batch_size: int, transform):
+def load_validation(batch_size: int, transforms):
     return DataLoader(
-        datasets.MNIST(root=DATA_DIR, download=True, train=False, transform=transform),
+        datasets.MNIST(root=DATA_DIR, download=True, train=False, transform=transform(*transforms)),
         batch_size=batch_size,
         shuffle=False,
         num_workers=1,
@@ -23,7 +24,7 @@ def load_validation(batch_size: int, transform):
 
 def load_test(batch_size, transforms):
     data = datasets.MNIST(
-        root=DATA_DIR, download=True, train=False, transform=transforms
+        root=DATA_DIR, download=True, train=False, transform=transform(*transforms)
     )
     return DataLoader(data, batch_size=batch_size, shuffle=True, num_workers=1)
 

@@ -137,3 +137,5 @@ dmypy.json
 ./Lectures/
 ./Practicals/
 Results/
+
+requirements.txt
